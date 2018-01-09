@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <title>Strength in Numbers</title>
+    <link rel="canonical" href="http://dmichulke.github.io/">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href='http://fonts.googleapis.com/css?family=Alegreya:400italic,700italic,400,700' rel='stylesheet'
+          type='text/css'>
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/css/bootstrap.min.css">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.7.0/styles/default.min.css">
+    <link href="css/screen.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+
+
+<nav class="navbar navbar-default">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">Strength in Numbers
+		<div class="nav navbar-desc">Leveraging Your Data To Solve Your Problems</div>	    </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+            <ul class="nav navbar-nav navbar-right">
+                <li  class="active" ><a href="/">Home</a></li>
+                <li
+                ><a href="/archives/">Blog</a></li>
+                
+                <li
+                >
+                <a href="/pages-output/about/">Consultancy</a>
+                </li>
+                
+                <li
+                >
+                <a href="/pages-output/contact/">Contact</a>
+                </li>
+                
+                <li><a href="/feed.xml">RSS</a></li>
+            </ul>
+        </div><!--/.nav-collapse -->
+    </div><!--/.container-fluid -->
+</nav>
+
+
+<div class="container">
+
+
+    <div class="row">
+        <div class="col-lg-9">
+            <div id="content">
+                
+<div id="post">
+    <div class="post-header">
+    <div id="post-meta" class="row">
+        <div class="col-lg-6">December 28, 2017</div>
+        
+    </div>
+    <h2>Location-Aware Real-Time Marketing</h2>
+</div>
+<div>
+    
+    <p>Location-Aware Marketing might be the next big thing in marketing.</p><p>After all, if still 90% of all purchases are done offline, then why not market in the offline segment as well? Competition is little and the potential impact on a company's bottomline is huge.</p><p>However, if it were that easy everybody would already be doing it. In what follows, I describe a business and technical overview of the challenges of such a system based on my experiences working as a consultant for almost 2 years in a Fortune 500 company where I was responsible for developing the prototype backend and putting it partly into production.</p><p>The project's goal was to market goods and services to retail customers via an established and widely used cell phone application for payments. Consequently, the app should be extended to allow for location-aware real-time marketing, i.e., "promoting things when the customer is at a specific place at a specific time."</p><p>The resulting use cases were based on the cell phone acting as a location sensor and possibly coupon display under the following scenarios:</p><ol><li>Customer enters a shopping mall -> receives coupon to entice footfall in a new shop</li><li>Customer waits in his car at a traffic light -> the ad billboard next to the traffic light is personalized to the customer's preferences</li><li>Customer leaves work around noon -> offer lunch coupon to entice him and his colleagues to visit restaurant</li><li>Customer leaves work in the evening -> offer grocery store coupon to entice him to do his grocery purchases there</li></ol><p>Besides the obvious cell phone application the system requires a back-end server that holds all coupon and customer data and responds fast even when being used by a few hundred thousands of people. My work was mostly on the back-end side, developing the database schema and the RESTful API while keeping an eye on application security (not so hard) and scalability (much harder). Here is a list of things to consider before you start developing your own coupon ad service:</p><h3 id="technical&#95;obstacle:&#95;efficient&#95;geo-lookup">Technical Obstacle: Efficient Geo-Lookup</h3><p>The problem: Aggregating all coupons and serving those nearby, every few minutes. This must happen fast because at 1 million users and a polling interval of 5 minutes we need to serve 1600 request per seconds. </p><p>Proposed solution: Using <a href='https://en.wikipedia.org/wiki/Hilbert_curve'>Hilbert Curves</a> and the <a href='https://github.com/google/s2-geometry-library-java'>google S2 library</a>. It's also <a href='www.metablake.com/foursquare/wsdm2013-final.pdf'>Foursquare's approach</a> and encodes location in databases via 64 bit integers. Since integers are easily indexed, fast lookups are straightforward and don't require any special extension (such as <a href='http://postgis.net/'>postgis</a> at the cost of just a little bit more application logic. This makes the solution database-agnostic and indeed we switched from a postgres prototype to an oracle database without affecting the DB structure.  A good explanation of the underlying concepts can be found <a href='http://blog.christianperone.com/2015/08/googles-s2-geometry-on-the-sphere-cells-and-hilbert-curve/'>here</a>.</p><h3 id="technical&#95;obstacle:&#95;recommendation&#95;logic">Technical Obstacle: Recommendation Logic</h3><p>For each request to serve nearby coupons we must order the coupons by relevance to the customer. This is to reduce cognitive load on the customer and to serve only the most important among the nearby coupons (reducing IO and bandwith usage thereby).</p><p>I chose to use a simple yet fast recommendation algorithm based on a <a href='https://en.wikipedia.org/wiki/Naive_Bayes_classifier'>Naive Bayesian Classifiers</a>. Here, different dimensions "constituting" relevance are evaluated, each resulting in a probability. By multiplying these probabilities one arrives at an aggregate probability that the customer likes the coupon. </p><p>Examples for dimensions are:</p><ul><li>coupon users within the last hours ("hotness" of the coupon)</li><li>coupon category (food, electronics, ...)</li><li>coupon tags (a set of keywords)</li><li>distance from customer to coupon</li><li>distance from typical customer locations (e.g., places where customer stays regularly for several hours per week) to coupon</li><li>time of day and day of week</li><li>customer coupon preferences (as inferred from the customer's interaction history)</li><li>customer eligibility (gender, age)</li></ul><p>The approach has several advantages:</p><ol><li>It is simple and very fast to calculate and needs no extensive prior training, an ideal initial recommendation algorithm that can be gradually refined.</li><li>It is easy to use even if the customer has no history of interacting with coupons: You just use coupon hotness and distance, i.e., switch off most dimensions until you have enough data. You gradually turn those dimensions on when you have more data.</li><li>It is the opposite of a black box: You can easily explain why a given coupon is chosen over another and introduce weights to modify the importance of specific dimensions. Modifying those weights later on based on customer segment is straightforward</li></ol><h3 id="business&#95;obstacle:&#95;defining&#95;the&#95;process&#95;and&#95;constraints">Business Obstacle: Defining the Process and Constraints</h3><p>Regarding the process, many questions have to be answered:</p><h4 id="creating&#95;coupons">Creating Coupons</h4><ul><li>Who creates the coupons - the merchant via a web portal or a service desk employee? Is there some sort of double-check or revision mechanism in case some wrong data was entered?</li><li>Do you allow pictures with coupons? What if those contain adult material?</li><li>How do you interface with existing coupon campaign tools that your merchants might already use?</li></ul><h4 id="using&#95;coupons">Using Coupons</h4><ul><li>Can a coupon be "reserved" by a customer before actually being redeemed?</li><li>Are coupons transferrable?  Can people reserve coupons for others who otherwise wouldn't be eligible?</li><li>How do you identify yourself at the shop as the legitimate coupon owner?</li><li>Do you want public coupons or private coupons, public coupons being those that anyone can see/redeem and private coupons being those pushed only to specific people and only redeemable by those?</li></ul><h4 id="coupon&#95;constraints">Coupon Constraints</h4><ul><li>(Maximum) Number of categories and tags?</li><li>Are there limits on how many coupons can be reserved or redeemed as a general cap?</li><li>Can a coupon be used more than once per person? How often? Are the limits applied to reservation or redemption?</li><li>Is reservation or redemption in any other way limited? Maybe only during week days, or only during specific hours? Or maybe only to specific locations of a merchant?</li><li>Until when coupons are valid?</li></ul><h3 id="business&#95;obstacle:&#95;business&#95;case&#95;and&#95;actions">Business Obstacle: Business Case and Actions</h3><p>Depending on your business model, you will need infrastructure in place:</p><ul><li>If you sell impressions: You will need to control the content of ad screens and (trivially) the app</li><li>If you sell footfalls: Your app will need to be able to connect to the internet within the target shop or at least get GPS coordinates for later use. Correcting for people who only pass by shouldn't be a big problem given enough data.</li><li>If you sell redemptions: This is probably only easy if you control the payment network or the Merchant's Point of Sale.</li></ul><h3 id="business&#95;obstacle:&#95;promoting&#95;the&#95;app">Business Obstacle: Promoting the app</h3><p>Finally, you need to get the app on enough consumer cell phones in order to be able to attract merchants.  It's probably easiest and cheapest to start in a big city and focus on growing merchants and consumers there. Once you have a name there, you can expand to other cities.</p><p><br /></p><p><em>You have a similar project in mind and need help?</em> <em><a href='/pages-output/contact/'>Let me know</a>!</em></p>
+</div>
+
+<div id="post-tags">
+    <b>Tags: </b>
+    
+    <a href="/tags-output/marketing/">marketing</a>
+    
+    <a href="/tags-output/proximity/">proximity</a>
+    
+    <a href="/tags-output/coupon/">coupon</a>
+    
+    <a href="/tags-output/location-aware/">location-aware</a>
+    
+    <a href="/tags-output/real-time/">real-time</a>
+    
+    <a href="/tags-output/geo-location/">geo-location</a>
+    
+</div>
+
+
+    
+
+    <div id="prev-next">
+        
+        
+    </div>
+</div>
+
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div id="sidebar">
+                <h3>Links</h3>
+                <ul id="links">
+                    <li><a href="http://www.github.com/dmichulke/cv">CV</a></li>
+                    <li><a href="https://www.linkedin.com/in/daniel-michulke-118bba81/">LinkedIn Profile</a></li>
+                    <li><a href="http://www.github.com/dmichulke">GitHub Repository</a></li>
+                    <li><a href="http://www.cryptoport.net/">www.cryptoport.net - Cryptocurrency Portfolio Tracker</a></li>
+                    
+                </ul>
+                
+                <div id="recent">
+                    <h3>Recent Posts</h3>
+                    <ul>
+                        
+                        <li><a href="/posts-output/2017-12-28-location-aware/">Location-Aware Real-Time Marketing</a></li>
+                        
+                    </ul>
+                </div>
+                
+                
+                <div id="tags">
+                    <h3>Tags</h3>
+                    <ul>
+                        
+                        <li><a href="/tags-output/marketing/">marketing</a></li>
+                        
+                        <li><a href="/tags-output/proximity/">proximity</a></li>
+                        
+                        <li><a href="/tags-output/coupon/">coupon</a></li>
+                        
+                        <li><a href="/tags-output/location-aware/">location-aware</a></li>
+                        
+                        <li><a href="/tags-output/real-time/">real-time</a></li>
+                        
+                        <li><a href="/tags-output/geo-location/">geo-location</a></li>
+                        
+                    </ul>
+                </div>
+                
+            </div>
+        </div>
+    </div>
+    <footer>Copyright &copy; 2018 Daniel Michulke
+        <p style="text-align: center;">Powered by <a href="http://cryogenweb.org">Cryogen</a></p></footer>
+</div>
+<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.0/js/bootstrap.min.js"></script>
+<script src="js/highlight.pack.js" type="text/javascript"></script>
+<script>hljs.initHighlightingOnLoad();</script>
+
+
+</body>
+</html>
