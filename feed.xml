@@ -1,28 +1,28 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <rss version='2.0' xmlns:atom='http://www.w3.org/2005/Atom'>
 <channel>
-<atom:link href='http://dmichulke.github.io/' rel='self' type='application/rss+xml'/>
+<atom:link href='https://dmichulke.github.io/' rel='self' type='application/rss+xml'/>
 <title>
 Strength in Numbers
 </title>
 <link>
-http://dmichulke.github.io/
+https://dmichulke.github.io/
 </link>
 <description>
 Leveraging Your Data To Solve Your Problems
 </description>
 <lastBuildDate>
-Wed, 28 Feb 2018 12:08:58 +0100
+Thu, 01 Mar 2018 20:25:28 +0100
 </lastBuildDate>
 <generator>
 clj-rss
 </generator>
 <item>
 <guid>
-http://dmichulke.github.io/posts-output/2017-12-28-location-aware/
+https://dmichulke.github.io/posts-output/2017-12-28-location-aware/
 </guid>
 <link>
-http://dmichulke.github.io/posts-output/2017-12-28-location-aware/
+https://dmichulke.github.io/posts-output/2017-12-28-location-aware/
 </link>
 <title>
 Location-Aware Real-Time Marketing
