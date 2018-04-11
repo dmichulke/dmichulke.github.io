@@ -175,3 +175,8 @@ pre, code, .hljs {
         text-align: left;
     }
 }
+
+figcaption {font-style: italic;
+            text-align: center;}
+
+figure {margin: 0 auto;}
